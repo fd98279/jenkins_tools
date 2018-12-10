@@ -3,7 +3,8 @@
       {
         "url" : "http://xyz.com/",
         "username" : "username",
-        "password" : "password"
+        "password" : "password",
+        "snstopic" : "arn:..."
       }
     ]
   }
