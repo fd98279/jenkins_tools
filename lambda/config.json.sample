@@ -1,0 +1,9 @@
+{
+    "connections": [
+      {
+        "url" : "http://xyz.com/",
+        "username" : "username",
+        "password" : "password"
+      }
+    ]
+  }
