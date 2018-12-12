@@ -4,7 +4,8 @@
         "url" : "http://xyz.com/",
         "username" : "username",
         "password" : "password",
-        "snstopic" : "arn:..."
+        "snstopic" : "arn:...",
+        "buildqueuetimelimit": 15
       }
     ]
   }
