@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sns"
@@ -44,8 +45,8 @@ func HandleMessage(debug *bool, buffer *bytes.Buffer, msg string) {
 // HandleRequest Handle lambda function
 func HandleRequest(ctx context.Context) (string, error) {
 
-	configFile := flag.String("config", "", "config file path")
-	debug := flag.Bool("debug", false, "debug mode")
+	configFile := flag.String("config", "./config.json", "config file path")
+	debug := flag.Bool("debug", true, "debug mode")
 	flag.Parse()
 
 	/* Read config */
@@ -144,6 +145,9 @@ func HandleRequest(ctx context.Context) (string, error) {
 	// Send SNS notification if any job is stuck
 	// Create a session object to talk to SNS (also make sure you have your key and secret setup in your .aws/credentials file)
 	if jobStuck {
+		HandleMessage(debug, &buffer, fmt.Sprintf("Jobs stuck\n"))
+		os.Setenv("AWS_SDK_LOAD_CONFIG", "true")
+		HandleMessage(debug, &buffer, "Sending SNS notification\n")
 		svc := sns.New(session.New())
 		// params will be sent to the publish call included here is the bare minimum params to send a message.
 		params := &sns.PublishInput{
@@ -151,25 +155,29 @@ func HandleRequest(ctx context.Context) (string, error) {
 			TopicArn: aws.String(connections.Connections[0].SNSTopic), //Get this from the Topic in the AWS console.
 		}
 
-		resp, err := svc.Publish(params) //Call to puclish the message
+		resp, err := svc.Publish(params) //Call to publish the message
 
 		if err != nil { //Check for errors
 			// Print the error, cast err to awserr.Error to get the Code and
 			// Message from an error.
-			fmt.Println(err.Error())
+			HandleMessage(debug, &buffer, fmt.Sprintf("SNS notification send error: %s\n", err.Error()))
 			return "Failed", nil
 		}
 		//  Pretty-print the response data.
-		fmt.Println(resp)
+		HandleMessage(debug, &buffer, fmt.Sprintf("SNS notification: Response: %s\n", resp))
+
 	} else {
-		fmt.Println("Ok")
+		HandleMessage(debug, &buffer, "No jobs stuck\n")
+	}
+
+	if ctx != nil {
+		ctx.Done()
 	}
 
 	return "Ok", nil
 }
 
 func main() {
-	os.Setenv("AWS_SDK_LOAD_CONFIG", "true")
-	HandleRequest(nil)
-	// lambda.Start(HandleRequest)
+	// HandleRequest(nil)
+	lambda.Start(HandleRequest)
 }
